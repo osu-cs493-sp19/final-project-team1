@@ -4,7 +4,6 @@ const bodyParser = require('body-parser');
 
 const api = require('./api');
 const { connectToDB } = require('./lib/mongo');
-const { connectToRabbitMQ } = require('./lib/rabbitmq');
 const { getDownloadStreamByFilename } = require('./models/photo');
 
 
@@ -18,21 +17,6 @@ app.use(morgan('dev'));
 
 app.use(bodyParser.json());
 app.use(express.static('public'));
-
-app.get('/media/photos/:filename', (req, res, next) => {
-  getDownloadStreamByFilename(req.params.filename)
-    .on('error', (err) => {
-      if (err.code === 'ENOENT') {
-        next();
-      } else {
-        next(err);
-      }
-    })
-    .on('file', (file) => {
-      res.status(200).type("image/jpeg");
-    })
-    .pipe(res);
-});
 
 /*
  * All routes for the API are written in modules in the api/ directory.  The
@@ -48,7 +32,6 @@ app.use('*', function (req, res, next) {
 });
 
 connectToDB(async () => {
-  await connectToRabbitMQ('images');
   app.listen(port, () => {
     console.log("== Server is running on port", port);
   });

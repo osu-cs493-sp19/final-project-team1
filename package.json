@@ -1,5 +1,5 @@
 {
-  "name": "master-assignment-4",
+  "name": "master-assignment-final",
   "version": "1.2.0",
   "description": "A small business review API",
   "main": "server.js",
@@ -12,7 +12,7 @@
     "type": "git",
     "url": "git+https://github.com/osu-cs493-sp19/master-assignment-4.git"
   },
-  "author": "Hess <hessro@oregonstate.edu>",
+  "author": "",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/osu-cs493-sp19/master-assignment-4/issues"
