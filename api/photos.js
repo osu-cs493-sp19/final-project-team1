@@ -6,7 +6,6 @@ const crypto = require('crypto');
 const router = require('express').Router();
 
 const { validateAgainstSchema } = require('../lib/validation');
-const { getChannel } = require('../lib/rabbitmq');
 
 const {
   PhotoSchema,
@@ -50,9 +49,6 @@ router.post('/', upload.single('image'), async (req, res) => {
       };
       const id = await insertNewPhoto(image);
       await removeUploadedFile(req.file);
-
-      const channel = getChannel();
-      channel.sendToQueue('images', Buffer.from(id.toString()));
 
       res.status(200).send({
         id: id,
