@@ -6,7 +6,6 @@ const crypto = require('crypto');
 const router = require('express').Router();
 
 const { validateAgainstSchema } = require('../lib/validation');
-const { getChannel } = require('../lib/rabbitmq');
 
 const {
   PhotoSchema,

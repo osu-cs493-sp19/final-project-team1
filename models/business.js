@@ -2,11 +2,6 @@
  * Business schema and data accessor methods;
  */
 
-const { ObjectId } = require('mongodb');
-
-const { getDBReference } = require('../lib/mongo');
-const { extractValidFields } = require('../lib/validation');
-const { getPhotosByBusinessId } = require('./photo');
 
 /*
  * Schema describing required/optional fields of a business object.
