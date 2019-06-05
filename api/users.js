@@ -17,17 +17,17 @@ router.post('/', async (req, res) => {
 				res.status(201).send({
 					id: id
 				});
-			} catch (err) {
+			}catch(err){
 				res.status(500).send({
 					error: "Error inserting user into DB.  Please try again later."
 				});
 			}
-		} else {
+		}else{
 			res.status(403).send({
 				error: "Unauthorized."
 			});
 		}
-	} else {
+	}else{
 		res.status(400).send({
 			error: "Request body does not contain a valid user."
 		});
@@ -37,14 +37,14 @@ router.post('/', async (req, res) => {
 /*
  * Route to login with a user's credentials.
  */
-router.post('/login', async function (req, res) {
+router.post('/login', async (req, res) => {
 	if (req.body && req.body.email && req.body.password) {
 		try {
-			const authenticated = await validateUser(req.body.email, req.body.password);
+			const userid = await validateUser(req.body.email, req.body.password);
 			
-			if (authenticated) {
-				const user = await getUserById(parseInt(req.body.id), false);
-				const token = generateAuthToken(req.body.id, user.role);
+			if (userid) {
+				const user = await getUserById(userid, 0);
+				const token = generateAuthToken(userid, user.role);
 				
 				res.status(200).send({ token: token });
 			} else {

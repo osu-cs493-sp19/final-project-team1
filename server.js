@@ -4,9 +4,6 @@ const bodyParser = require('body-parser');
 
 const api = require('./api');
 const { connectToDB } = require('./lib/mongo');
-const { connectToRabbitMQ } = require('./lib/rabbitmq');
-const { getDownloadStreamByFilename } = require('./models/photo');
-
 
 const app = express();
 const port = process.env.PORT || 8000;
@@ -48,7 +45,6 @@ app.use('*', function (req, res, next) {
 });
 
 connectToDB(async () => {
-  await connectToRabbitMQ('images');
   app.listen(port, () => {
     console.log("== Server is running on port", port);
   });
