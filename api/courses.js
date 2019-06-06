@@ -132,7 +132,9 @@ router.put('/:id/students', async (req, res, next) => {
     if(results) {
       res.status(200).send("Success");
     } else {
-      next();
+      res.status(500).send({
+        error: "Failed to update enrollment for Course " + req.params.id
+      })
     }
   } catch (err) {
     console.error(err);

@@ -27,7 +27,6 @@ exports.getCoursesPage = async function getCoursesPage(page) {
 
 
   const results = await collection.find({})
-    .project({ enrollments: 0, assignments: 0 })
     .sort({ _id: 1 })
     .skip(offset)
     .limit(pageSize)
@@ -57,7 +56,7 @@ exports.getCourseByID = async function getCourseByID(id){
     return null;
   } else {
     // THIS NEEDS TO OMIT ENROLLMENTS AND ASSIGNMENTS -- IMPORTANT
-    const results = await collection.find({ _id: new ObjectId(id) }).project().toArray();
+    const results = await collection.find({ _id: new ObjectId(id) }).toArray();
     return results[0];
   }
 }
@@ -96,56 +95,54 @@ exports.deleteCourseByID = async function deleteCourseByID(id){
   }
 }
 
-exports.updateEnrollment = async function updateEnrollment(id, toAdd, toRemove){
+exports.updateEnrollment = async function updateEnrollment(id, add, remove){
   const db = getDBReference();
-  const collection = db.collection('courses');
+  const collection = db.collection('users');
   if (!ObjectId.isValid(id)) {
     return null;
   } else {
-    const course = await collection.find({ _id: new ObjectId(id) }).toArray();
-    
-    console.log("BEFORE --- \n" + course[0]);
+    var a = 0;
+    var r = 0;
 
-    // Add enrollments
-    if(toAdd){
-      for(var i = 0; i < toAdd.length; i++){
-        if(course[0].enrollments.indexOf(toAdd[i]) === -1){
-          course[0].enrollments.push(toAdd[i]);
-        }
+    if(add){
+      const addTo = await collection.find({ _id: { $in: add }}).toArray();
+      for(var i = 0; i < addTo.length; i++){
+        addTo[i].enrollment.indexOf(id);
+        const add = await collection.replaceOne(
+          { _id: new ObjectId(addTo[i]._id) },
+          addTo[i]
+        );
+        a = a + addTo.matchedCount;
       }
+    } else {
+      a = 1;
     }
 
-    console.log("ADDED --- \n" + course[0]);
-
-    // Remove enrollments
-    if(toRemove){
-      for(var i = 0; i < toRemove.length; i++){
-        if(!(course[0].enrollments.indexOf(toRemove[i]) === -1)){
-          course[0].enrollments.splice(i,0);
-          i--;
-          console.log("I: " + i);
-        }
+    if(remove){
+      const removeFrom = await collection.find({ _id: { $in: remove }}).toArray();
+      for(var i = 0; i < removeFrom.length; i++){
+        removeFrom[i].enrollment.splice(i,1);
+        const remove = await collection.replaceOne(
+          { _id: new ObjectId(removeFrom[i]._id) },
+          removeFrom[i]
+        );
+        r = r + removeFrom.matchedCount;
       }
+    } else {
+      r = 1;
     }
 
-    console.log("REMOVED --- \n" + course[0]);
-
-
-    const result = await collection.replaceOne(
-      { _id: new ObjectId(id) },
-      course[0]
-    );
-    return result.matchedCount > 0;
+    return (a > 0) && (r > 0);
   }
 }
 
 exports.getEnrollment = async function getEnrollment(id){
   const db = getDBReference();
-  const collection = db.collection('enrollment');
+  const collection = db.collection('users');
   if(!ObjectId.isValid(id)) {
     return null;
   } else {
-    const enrollment = await collection.find({ courseID: new ObjectId(id) }).toArray();
+    const enrollment = await collection.find({ "enrollment.courseID": new ObjectId(id) }).project( {_id: 1} ).toArray();
     return enrollment;
   }
 }
