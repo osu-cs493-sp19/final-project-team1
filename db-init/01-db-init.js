@@ -1,46 +1,22 @@
 db.users.insertMany([
-  {
-    "name": "Jane Doe",
-    "email": "email1@gmail.com",
-    "password": "password1",
-    "role": "student"
-  },
-  {
-    "name": "Bob Smith",
-    "email": "email2@gmail.com",
-    "password": "password2",
-    "role": "student"
-  },
-  {
-    "name": "Kris Janson",
-    "email": "email3@gmail.com",
-    "password": "password3",
-    "role": "student"
-  },
-  {
-    "name": "Kori Haynes",
-    "email": "email4@gmail.com",
-    "password": "password4",
-    "role": "student"
-  },
-  {
-    "name": "Josh Diedpoor",
-    "email": "email5@gmail.com",
-    "password": "password5",
-    "role": "instructor"
-  },
-  {
-    "name": "Michael Unclean",
-    "email": "email6@gmail.com",
-    "password": "password6",
-    "role": "instructor"
-  },
-  {
-    "name": "Garrett Sleeper",
-    "email": "email7@gmail.com",
-    "password": "password7",
-    "role": "admin"
-  },
+	{
+		"name": "Cory Hayes",
+		"email": "hayescor@oregonstate.edu",
+		"role": "admin",
+		"password": "$2a$08$Y2IHnr/PU9tzG5HKrHGJH.zH3HAvlR5i5puD5GZ1sHA/mVrHKci72"
+	},
+	{
+		"name": "Cody Luth",
+		"email": "luthco@oregonstate.edu",
+		"role": "instructor",
+		"password": "$2a$08$bAKRXPs6fUPhqjZy55TIeO1e.aXud4LD81awrYncaCKJoMsg/s0c."
+	},
+	{
+		"name": "Christopher Jansen",
+		"email": "jansench@oregonstate.edu",
+		"role": "student",
+		"password": "$2a$08$WvRkJm.bz3zoRnmA.aQZBewLopoe00nA4qbzbnLyS4eRbm2MFNkMO"
+	}
 ])
 
 db.courses.insertMany([
