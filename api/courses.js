@@ -4,7 +4,11 @@ const { validateAgainstSchema } = require('../lib/validation');
 const {
     CourseSchema,
     getCoursesPage,
-    insertNewCourse
+    insertNewCourse,
+    getCourseByID,
+    updateCourseByID,
+    deleteCourseByID,
+    updateEnrollment
 } = require('../models/course');
 
 /*
@@ -44,14 +48,100 @@ router.post('/', async (req, res) => {
     } catch (err) {
       console.error(err);
       res.status(500).send({
-        error: "Error inserting business into DB.  Please try again later."
+        error: "Error adding Course. Try again later."
       });
     }
   } else {
+    console.error(err);
     res.status(400).send({
-      error: "Request body is not a valid courses object."
+      error: "The request body was either not present or did not contain any fields related to Course objects."
     });
   }
 });
+
+/*
+ * Route to get a single course by ID
+ */
+router.get('/:id', async (req, res, next) => {
+  try {
+    const course = await getCourseByID(req.params.id);
+    if(course){
+      res.status(200).send(course);
+    } else {
+      next();
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(404).send({
+      error: "Specified Course " + req.params.id + " not found"
+    });
+  }
+});
+
+/*
+ * Route to update a single course by ID
+ */
+router.put('/:id', async (req, res, next) => {
+  if (validateAgainstSchema(req.body, CourseSchema)){
+    try {
+      const results = await updateCourseByID(req.params.id, req.body);
+      if(results) {
+        res.status(200).send("Success");
+      } else {
+        next();
+      }
+    } catch (err) {
+      console.error(err);
+      res.status(500).send({
+        error: "Error updating Course " + req.params.id + ". Try again later."
+      });
+    }
+  } else {
+    console.error(err);
+    res.status(400).send({
+      error: "The request body was either not present or did not contain any fields related to Course objects."
+    });
+  }
+});
+
+/*
+ * Route to Delete a single course by ID
+ */
+router.delete('/:id', async (req, res, next) =>  {
+  try {
+    const course = await deleteCourseByID(req.params.id);
+    if(course){
+      res.status(200).send("Success");
+    } else {
+      next();
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({
+      error: "Error deleting Course " + req.params.id + ". Try again later."
+    });
+  }
+});
+
+/*
+ * Route to Update a classes Enrollment
+ */ 
+router.put('/:id/students', async (req, res, next) => {
+  try {
+    const results = await updateEnrollment(req.params.id, req.body.add, req.body.remove);
+    if(results) {
+      res.status(200).send("Success");
+    } else {
+      next();
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({
+      error: "Error updating enrollment for Course " + req.params.id + ". Try again later."
+    });
+  }
+});
+
+
 module.exports = router;
 
