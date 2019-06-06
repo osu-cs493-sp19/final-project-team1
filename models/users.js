@@ -5,6 +5,7 @@
 const {getDBReference} = require('../lib/mongo');
 const {extractValidFields} = require('../lib/validation');
 const bcrypt = require('bcryptjs');
+const {ObjectId} = require('mongodb');
 
 /*
  * Schema describing required/optional fields of a user object.
@@ -41,18 +42,18 @@ async function getUserById(id, includePassword) {
 	const db = getDBReference();
 	const collection = db.collection('users');
 	
-	if (!ObjectId.isValid(id)) {
+	if(!ObjectId.isValid(id)){
 		return null;
-	} else {
+	}else{
 		const projection = includePassword ? {} : {password: 0};
 		const results = await collection
 			.find({_id: new ObjectId(id)})
 			.project(projection)
 			.toArray();
-			
+
 		return results[0];
 	}
-};
+}
 exports.getUserById = getUserById;
 
 /*
@@ -61,29 +62,28 @@ exports.getUserById = getUserById;
 async function getUserByEmail(email, includePassword) {
 	const db = getDBReference();
 	const collection = db.collection('users');
-	
-	if (!ObjectId.isValid(id)) {
-		return null;
-	} else {
-		const projection = includePassword ? {} : {password: 0};
-		const results = await collection
-			.find({email: email})
-			.project(projection)
-			.toArray();
+	const projection = includePassword ? {} : {password: 0};
+	const results = await collection
+		.find({email: email})
+		.project(projection)
+		.toArray();
 			
-		return results[0];
-	}
+	return results[0];
 }
 exports.getUserById = getUserById;
 
 /*
  * Validate user with corresponding hashed 'password'
+ * Returns user 'id' if valid, null if not
  */
 async function validateUser(email, password) {
 	const user = await getUserByEmail(email, true);
-	const authenticated = user && await bcrypt.compare(password, user.password);
 	
-	return authenticated;
+	if(user && await bcrypt.compare(password, user.password)){
+		return user._id;
+	}else{
+		return null;
+	}
 }
 exports.validateUser = validateUser;
 
