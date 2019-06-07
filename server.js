@@ -4,8 +4,6 @@ const bodyParser = require('body-parser');
 
 const api = require('./api');
 const { connectToDB } = require('./lib/mongo');
-const { getDownloadStreamByFilename } = require('./models/photo');
-
 
 const app = express();
 const port = process.env.PORT || 8000;
