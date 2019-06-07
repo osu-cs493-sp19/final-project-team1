@@ -16,21 +16,6 @@ app.use(morgan('dev'));
 app.use(bodyParser.json());
 app.use(express.static('public'));
 
-app.get('/media/photos/:filename', (req, res, next) => {
-  getDownloadStreamByFilename(req.params.filename)
-    .on('error', (err) => {
-      if (err.code === 'ENOENT') {
-        next();
-      } else {
-        next(err);
-      }
-    })
-    .on('file', (file) => {
-      res.status(200).type("image/jpeg");
-    })
-    .pipe(res);
-});
-
 /*
  * All routes for the API are written in modules in the api/ directory.  The
  * top-level router lives in api/index.js.  That's what we include here, and
