@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const {validateAgainstSchema} = require('../lib/validation');
 const {generateAuthToken, requireAuthentication} = require('../lib/auth');
-const {UserSchema, insertNewUser, getUserById, getUserByEmail, validateUser} = require('../models/users');
+const {UserSchema, insertNewUser, getUserById, getUserByEmail, validateUser, getAllUsers, getCoursesByInstructorId} = require('../models/users');
 
 /*
  * Route to create new user account
@@ -64,15 +64,38 @@ router.post('/login', async (req, res) => {
 	}
 });
 
- 
+
 /*
- * Route to fetch info about a specific user. !!Remove this before publish!!
+ * Route to get all user data. !!Do not publish!!
+ */
+router.get('/', async (req, res, next) => {
+		try {
+			const users = await getAllUsers();
+			if (users) {
+				res.status(200).send(users);
+			} else {
+				next();
+			}
+		} catch (err) {
+			res.status(500).send({
+				error: "Unable to fetch users.  Please try again later."
+			});
+		}
+});
+
+/*
+ * Route to fetch info about a specific user including courses taught(instructor) or attending(student)
  */
 router.get('/:id', requireAuthentication, async (req, res, next) => {
-	if (req.user == req.params.id || req.isAdmin) {
+	if (req.role == "admin" || req.user == req.params.id) {
 		try {
-			const user = await getUserById(parseInt(req.params.id), 0);
+			const user = await getUserById(req.user, 0);
 			if (user) {
+				if(user.role == "instructor"){
+					user.courses = getCoursesByInstructorId(user._id);
+				}else{
+					user.courses = [];
+				}
 				res.status(200).send(user);
 			} else {
 				next();
