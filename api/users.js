@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const {validateAgainstSchema} = require('../lib/validation');
 const {generateAuthToken, requireAuthentication} = require('../lib/auth');
-const {UserSchema, insertNewUser, getUserById, getUserByEmail, validateUser} = require('../models/users');
+const {UserSchema, insertNewUser, getUserById, validateUser} = require('../models/users');
 
 /*
  * Route to create new user account
@@ -66,12 +66,12 @@ router.post('/login', async (req, res) => {
 
  
 /*
- * Route to fetch info about a specific user. !!Remove this before publish!!
+ * Route to fetch info about a specific user.
  */
 router.get('/:id', requireAuthentication, async (req, res, next) => {
 	if (req.user == req.params.id || req.isAdmin) {
 		try {
-			const user = await getUserById(parseInt(req.params.id), 0);
+			const user = await getUserById(req.params.id, 0);
 			if (user) {
 				res.status(200).send(user);
 			} else {

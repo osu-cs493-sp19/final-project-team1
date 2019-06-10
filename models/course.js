@@ -1,7 +1,9 @@
 const { ObjectId } = require('mongodb');
+const { Parser}  = require('json2csv');
 
 const { getDBReference } = require('../lib/mongo');
 const { extractValidFields } = require('../lib/validation');
+const { getUserById } = require('./users');
 
 const CourseSchema = {
   subject: { required: true },
@@ -24,7 +26,6 @@ exports.getCoursesPage = async function getCoursesPage(page) {
   page = page > lastPage ? lastPage : page;
   page = page < 1 ? 1 : page;
   const offset = (page - 1) * pageSize;
-
 
   const results = await collection.find({})
     .sort({ _id: 1 })
@@ -101,48 +102,76 @@ exports.updateEnrollment = async function updateEnrollment(id, add, remove){
   if (!ObjectId.isValid(id)) {
     return null;
   } else {
-    var a = 0;
-    var r = 0;
+    var count = 0;
 
     if(add){
-      const addTo = await collection.find({ _id: { $in: add }}).toArray();
-      for(var i = 0; i < addTo.length; i++){
-        addTo[i].enrollment.indexOf(id);
-        const add = await collection.replaceOne(
-          { _id: new ObjectId(addTo[i]._id) },
-          addTo[i]
-        );
-        a = a + addTo.matchedCount;
+      console.log("--- In Add!");
+      for (var i = 0; i < add.length; i++){
+        console.log("--- i: " + i);
+        const results = await getUserById(add[i], 0);
+        if(results){
+          console.log("--- User Verified: " + results._id)
+          const added = await collection.updateOne(
+            { _id: new ObjectId(add[i]) },
+            { $addToSet: { enrollment: id } }
+          );
+          count = count + added.matchedCount;
+          console.log("Count: " + count);
+        }
       }
-    } else {
-      a = 1;
     }
 
     if(remove){
-      const removeFrom = await collection.find({ _id: { $in: remove }}).toArray();
-      for(var i = 0; i < removeFrom.length; i++){
-        removeFrom[i].enrollment.splice(i,1);
-        const remove = await collection.replaceOne(
-          { _id: new ObjectId(removeFrom[i]._id) },
-          removeFrom[i]
-        );
-        r = r + removeFrom.matchedCount;
+      console.log("--- In Remove!");
+      for (var i = 0; i < remove.length; i++){
+        console.log("--- i: " + i);
+        const results = await getUserById(remove[i], 0);
+        if(results){
+          console.log("--- User Verified: " + results._id)
+          const removed = await collection.updateOne( 
+            { _id : new ObjectId(remove[i]) },
+            { $pull: { enrollment: id } }
+          );
+          count = count + removed.matchedCount;
+        }
       }
-    } else {
-      r = 1;
     }
-
-    return (a > 0) && (r > 0);
+    return count > 0;
   }
 }
 
 exports.getEnrollment = async function getEnrollment(id){
   const db = getDBReference();
   const collection = db.collection('users');
+  var students = [];
   if(!ObjectId.isValid(id)) {
     return null;
   } else {
-    const enrollment = await collection.find({ "enrollment.courseID": new ObjectId(id) }).project( {_id: 1} ).toArray();
-    return enrollment;
+    const results = await collection.find({ enrollment: id }).project( {_id: 1} ).toArray();
+    if(results) {
+      for(var i = 0; i < results.length; i++) {
+        students.push(results[i]._id);
+      }
+    }
+    return students;
+  }
+}
+
+exports.getCSV = async function getCSV(id){
+  const db = getDBReference();
+  const collection = db.collection('users');
+  var students = [];
+  if(!ObjectId.isValid(id)) {
+    return null;
+  } else {
+    const results = await collection.find({ enrollment: id }).project( { _id: 1, name: 1, email: 1 } ).toArray();
+    const csv = new Parser(results);
+    if(results) {
+      results.forEach(function(row) {
+           csv += row.join(',');
+           csv += "\n";
+      });
+    }
+    return csv;
   }
 }

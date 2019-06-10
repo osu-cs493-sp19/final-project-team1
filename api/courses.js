@@ -8,7 +8,9 @@ const {
     getCourseByID,
     updateCourseByID,
     deleteCourseByID,
-    updateEnrollment
+    updateEnrollment,
+    getEnrollment,
+    getCSV
 } = require('../models/course');
 
 /*
@@ -144,6 +146,42 @@ router.put('/:id/students', async (req, res, next) => {
   }
 });
 
+/*
+ * Route to get a classes Enrollment
+ */
+router.get('/:id/students', async (req, res, next) => {
+  try {
+    const results = await getEnrollment(req.params.id);
+    if(results){
+      res.status(200).send(results);
+    } else {
+      next();
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(404).send({
+      error: "Specified Course " + req.params.id + " not found"
+    });
+  }
+});
+
+router.get('/:id/router', async (req, res, next) => {
+  try {
+    const results = await getCSV(req.params.id);
+    if (results) {
+      res.setHeader('Content-disposition', 'attachment; filename=enrollment.csv');
+      res.set('Content-Type', 'text/csv');
+      res.status(200).send(results);
+    } else {
+      next();
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(404).send({
+      error: "Specified Course " + req.params.id + " not found"
+    });
+  }
+});
 
 module.exports = router;
 
