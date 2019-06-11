@@ -90,6 +90,7 @@ router.get('/:id', requireAuthentication, async (req, res, next) => {
 	if (req.role == "admin" || req.user == req.params.id) {
 		try {
 			const user = await getUserById(req.user, 0);
+
 			if (user) {
 				if(user.role == "instructor"){
 					user.courses = getCoursesByInstructorId(user._id);

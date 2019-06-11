@@ -1,9 +1,8 @@
 version: '3.7'
 services:
-
   api:
     build: .
-    image: assignment-4-api
+    image: final-assignment-api
     restart: always
     ports:
       - 8000:8000

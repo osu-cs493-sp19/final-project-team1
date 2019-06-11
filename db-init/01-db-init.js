@@ -18,3 +18,20 @@ db.users.insertMany([
 		"password": "$2a$08$WvRkJm.bz3zoRnmA.aQZBewLopoe00nA4qbzbnLyS4eRbm2MFNkMO"
 	}
 ])
+
+db.courses.insertMany([
+  {
+    "subject": "CS",
+    "number": 493,
+    "title": "Cloud Application Development",
+    "term": "sp19",
+    "instructorId": "5"
+  },
+  {
+    "subject": "ECE",
+    "number": 375,
+    "title": "Some Other Class",
+    "term": "sp19",
+    "instructorId": "5"
+  }
+])

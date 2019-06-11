@@ -103,7 +103,7 @@ async function getUserByEmail(email, includePassword) {
 			
 	return results[0];
 }
-exports.getUserById = getUserById;
+exports.getUserByEmail = getUserByEmail;
 
 /*
  * Validate user with corresponding hashed 'password'
@@ -114,7 +114,7 @@ async function validateUser(email, password) {
 	
 	if(user && await bcrypt.compare(password, user.password)){
 		return user._id;
-	}else{
+	} else {
 		return null;
 	}
 }
