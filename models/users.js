@@ -36,6 +36,20 @@ async function insertNewUser(user) {
 exports.insertNewUser = insertNewUser;
 
 /*
+ * Get all user account info. !!DO NOT PUBLISH!!
+ */
+async function getAllUsers() {
+	const db = getDBReference();
+	const collection = db.collection('users');
+	const results = await collection
+		.find({})
+		.toArray();
+
+	return results;	
+}
+exports.getAllUsers = getAllUsers;
+
+/*
  * Get user account data by ID. Exclude password unless 'includePassword' is true
  */
 async function getUserById(id, includePassword) {
@@ -55,6 +69,25 @@ async function getUserById(id, includePassword) {
 	}
 }
 exports.getUserById = getUserById;
+
+/*
+ * Get courses offered by an instuctor. Belongs in models/courses.js. Move it when courses has been implemented
+ */
+async function getCoursesByInstructorId(id){
+	const db = getDBReference();
+	const collection = db.collection('courses');
+	
+	if(!ObjectId.isValid(id)){
+		return null;
+	}else{
+		const results = await collection
+			.find({instructorId: new ObjectId(id)})
+			.toArray();
+
+		return results;
+	}
+}
+exports.getCoursesByInstructorId = getCoursesByInstructorId;
 
 /*
  * Get user account data by Email. Exclude password unless 'includePassword' is true
