@@ -10,9 +10,7 @@ const CourseSchema = {
   number: { required: true },
   title: { required: true },
   term: { required: true },
-  instructorId: { required: true },
-  enrollments: { required: false },
-  assignments: { required: false }
+  instructorId: { required: true }
 }
 exports.CourseSchema = CourseSchema;
 
@@ -56,7 +54,6 @@ exports.getCourseByID = async function getCourseByID(id){
   if (!ObjectId.isValid(id)) {
     return null;
   } else {
-    // THIS NEEDS TO OMIT ENROLLMENTS AND ASSIGNMENTS -- IMPORTANT
     const results = await collection.find({ _id: new ObjectId(id) }).toArray();
     return results[0];
   }

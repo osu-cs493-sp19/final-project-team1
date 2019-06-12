@@ -95,7 +95,7 @@ router.put('/:id', requireAuthentication, async (req, res, next) => {
 	try {
 	  const course = await getCourseByID(req.params.id);
 		
-      if (req.role == 'admin' || (req.role == 'instructor' && course.instructorId == req.params.id)) {     // can update course if admin or instructor for course
+      if (req.role == 'admin' || (req.role == 'instructor' && course.instructorId == req.user)) {     // can update course if admin or instructor for course
         const results = await updateCourseByID(req.params.id, req.body);
         if(results) {
           res.status(200).send("Success");
@@ -153,14 +153,14 @@ router.put('/:id/students', requireAuthentication, async (req, res, next) => {
   try {
 	const course = await getCourseByID(req.params.id);
 	
-	if (req.role == 'admin' || (req.role == 'instructor' && course.instructorId == req.params.id)) {     // can update course enrollment if admin or instructor for course
+	if (req.role == 'admin' || (req.role == 'instructor' && course.instructorId == req.user)) {     // can update course enrollment if admin or instructor for course
       const results = await updateEnrollment(req.params.id, req.body.add, req.body.remove);
       if(results) {
         res.status(200).send("Success");
       } else {
         res.status(500).send({
           error: "Failed to update enrollment for Course " + req.params.id
-        })
+        });
       }
 	} else {
 	  res.status(403).send({
@@ -182,7 +182,7 @@ router.get('/:id/students', requireAuthentication, async (req, res, next) => {
   try {
 	const course = await getCourseByID(req.params.id);
 	
-	if (req.role == 'admin' || (req.role == 'instructor' && course.instructorId == req.params.id)) {     // can get course enrollment if admin or instructor for course
+	if (req.role == 'admin' || (req.role == 'instructor' && course.instructorId == req.user)) {     // can get course enrollment if admin or instructor for course
       const results = await getEnrollment(req.params.id);
       if(results){
         res.status(200).send(results);
@@ -206,7 +206,7 @@ router.get('/:id/roster', requireAuthentication, async (req, res, next) => {
   try {
 	const course = await getCourseByID(req.params.id);
 	
-	if (req.role == 'admin' || (req.role == 'instructor' && course.instructorId == req.params.id)) {     // can get course enrollment.csv if admin or instructor for course
+	if (req.role == 'admin' || (req.role == 'instructor' && course.instructorId == req.user)) {     // can get course enrollment.csv if admin or instructor for course
       const results = await getCSV(req.params.id);
       if (results) {
         res.setHeader('Content-disposition', 'attachment; filename=enrollment.csv');
