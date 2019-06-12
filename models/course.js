@@ -1,18 +1,17 @@
 const { ObjectId } = require('mongodb');
-const { Parser}  = require('json2csv');
+const { Parser } = require('json2csv');
 
 const { getDBReference } = require('../lib/mongo');
 const { extractValidFields } = require('../lib/validation');
 const { getUserById } = require('./users');
+const { insertCSV } = require('./csv');
 
 const CourseSchema = {
   subject: { required: true },
   number: { required: true },
   title: { required: true },
   term: { required: true },
-  instructorId: { required: true },
-  enrollments: { required: false },
-  assignments: { required: false }
+  instructorId: { required: true }
 }
 exports.CourseSchema = CourseSchema;
 
@@ -82,18 +81,32 @@ exports.deleteCourseByID = async function deleteCourseByID(id){
   if(!ObjectId.isValid(id)) {
     return null;
   } else {
+    await removeCourseFromUsers(id);
     const courseResult = await collection.deleteOne(
       { _id: new ObjectId(id) }
     );
-
-    // Add something like this later to delete the students enrolled in this class
-    //
-    // const enrollmentResult = await collection.deleteAll(
-    //   { courseId: new ObjectId(id) }
-    // );
-
     return courseResult.deletedCount > 0;
   }
+}
+
+async function removeCourseFromUsers(courseId){
+  const db = getDBReference();
+  const collection = db.collection('users');
+  const results = await collection.find({ enrollment: courseId }).project( {_id: 1} ).toArray();
+  var count = 0;
+
+  for(var i = 0; i < results.length; i++) {
+    const user = await getUserById(results[i]._id, 0);
+    if(user){
+      const removed = await collection.updateOne( 
+        { _id : results[i]._id },
+        { $pull: { enrollment: courseId } }
+      );
+      count = count + removed.matchedCount;
+    }
+  }
+
+  return count > 0;
 }
 
 exports.updateEnrollment = async function updateEnrollment(id, add, remove){
@@ -105,29 +118,22 @@ exports.updateEnrollment = async function updateEnrollment(id, add, remove){
     var count = 0;
 
     if(add){
-      console.log("--- In Add!");
       for (var i = 0; i < add.length; i++){
-        console.log("--- i: " + i);
         const results = await getUserById(add[i], 0);
         if(results){
-          console.log("--- User Verified: " + results._id)
           const added = await collection.updateOne(
             { _id: new ObjectId(add[i]) },
             { $addToSet: { enrollment: id } }
           );
           count = count + added.matchedCount;
-          console.log("Count: " + count);
         }
       }
     }
 
     if(remove){
-      console.log("--- In Remove!");
       for (var i = 0; i < remove.length; i++){
-        console.log("--- i: " + i);
         const results = await getUserById(remove[i], 0);
         if(results){
-          console.log("--- User Verified: " + results._id)
           const removed = await collection.updateOne( 
             { _id : new ObjectId(remove[i]) },
             { $pull: { enrollment: id } }
@@ -165,13 +171,36 @@ exports.getCSV = async function getCSV(id){
     return null;
   } else {
     const results = await collection.find({ enrollment: id }).project( { _id: 1, name: 1, email: 1 } ).toArray();
-    const csv = new Parser(results);
-    if(results) {
-      results.forEach(function(row) {
-           csv += row.join(',');
-           csv += "\n";
-      });
+
+    const fields = [ '_id', 'name', 'email' ];
+    const opts = { fields };
+
+    try {
+      var csv;
+      const parser = new Parser(opts);
+      csv = parser.parse(results);
+      // const csvID = await insertCSV(csv);
+      return csv;
+    } catch (err) {
+      console.error(err);
+      return null;
     }
-    return csv;
+  }
+}
+
+exports.getAssignmentsByCourseId = async function getAssignmentsByCourseId(id){
+  const db = getDBReference();
+  const collection = db.collection('assignments');
+  var assignments = [];
+  if(!ObjectId.isValid(id)) {
+    return null;
+  } else {
+    const results = await collection.find({ courseId: id }).project( {_id: 1} ).toArray();
+    if(results) {
+      for(var i = 0; i < results.length; i++) {
+        assignments.push(results[i]._id);
+      }
+    }
+    return assignments;
   }
 }
