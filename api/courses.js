@@ -11,15 +11,17 @@ const {
     deleteCourseByID,
     updateEnrollment,
     getEnrollment,
-    getCSV
+    getCSV,
+    getAssignmentsByCourseId
 } = require('../models/course');
+const { downloadCSV } = require('../models/csv');
 
 /*
  * Route to get paginated list of Courses.
  */
 router.get('/', async (req, res) => {
   try{
-    const coursesPage = await getCoursesPage(parseInt(req.query) || 1);
+    const coursesPage = await getCoursesPage(parseInt(req.query.page) || 1);
     coursesPage.links = {};
     if (coursesPage.page < coursesPage.totalPages) {
       coursesPage.links.nextPage = `/courses?page=${coursesPage.page + 1}`;
@@ -95,7 +97,7 @@ router.put('/:id', requireAuthentication, async (req, res, next) => {
 	try {
 	  const course = await getCourseByID(req.params.id);
 		
-      if (req.role == 'admin' || (req.role == 'instructor' && course.instructorId == req.params.id)) {     // can update course if admin or instructor for course
+      if (req.role == 'admin' || (req.role == 'instructor' && course.instructorId == req.user)) {     // can update course if admin or instructor for course
         const results = await updateCourseByID(req.params.id, req.body);
         if(results) {
           res.status(200).send("Success");
@@ -114,7 +116,6 @@ router.put('/:id', requireAuthentication, async (req, res, next) => {
       });
     }
   } else {
-    console.error(err);
     res.status(400).send({
       error: "The request body was either not present or did not contain any fields related to Course objects."
     });
@@ -149,24 +150,23 @@ router.delete('/:id', requireAuthentication, async (req, res, next) =>  {
 /*
  * Route to Update a classes Enrollment
  */ 
-router.put('/:id/students', requireAuthentication, async (req, res, next) => {
+router.post('/:id/students', requireAuthentication, async (req, res, next) => {
   try {
-	const course = await getCourseByID(req.params.id);
-	
-	if (req.role == 'admin' || (req.role == 'instructor' && course.instructorId == req.params.id)) {     // can update course enrollment if admin or instructor for course
-      const results = await updateEnrollment(req.params.id, req.body.add, req.body.remove);
-      if(results) {
-        res.status(200).send("Success");
-      } else {
-        res.status(500).send({
-          error: "Failed to update enrollment for Course " + req.params.id
-        })
-      }
-	} else {
-	  res.status(403).send({
-	    error: "Unauthorized."
-	  });
-	}
+    const course = await getCourseByID(req.params.id);
+    if (req.role == 'admin' || (req.role == 'instructor' && course.instructorId == req.user)) {     // can update course enrollment if admin or instructor for course
+        const results = await updateEnrollment(req.params.id, req.body.add, req.body.remove);
+        if(results) {
+          res.status(200).send("Success");
+        } else {
+          res.status(500).send({
+            error: "Failed to update enrollment for Course " + req.params.id
+          })
+        }
+    } else {
+      res.status(403).send({
+        error: "Unauthorized."
+      });
+    }
   } catch (err) {
     console.error(err);
     res.status(500).send({
@@ -182,7 +182,7 @@ router.get('/:id/students', requireAuthentication, async (req, res, next) => {
   try {
 	const course = await getCourseByID(req.params.id);
 	
-	if (req.role == 'admin' || (req.role == 'instructor' && course.instructorId == req.params.id)) {     // can get course enrollment if admin or instructor for course
+	if (req.role == 'admin' || (req.role == 'instructor' && course.instructorId == req.user)) {     // can get course enrollment if admin or instructor for course
       const results = await getEnrollment(req.params.id);
       if(results){
         res.status(200).send(results);
@@ -204,22 +204,51 @@ router.get('/:id/students', requireAuthentication, async (req, res, next) => {
 
 router.get('/:id/roster', requireAuthentication, async (req, res, next) => {
   try {
-	const course = await getCourseByID(req.params.id);
-	
-	if (req.role == 'admin' || (req.role == 'instructor' && course.instructorId == req.params.id)) {     // can get course enrollment.csv if admin or instructor for course
+    const course = await getCourseByID(req.params.id);
+    
+    if (req.role == 'admin' || (req.role == 'instructor' && course.instructorId == req.user)) {     // can get course enrollment.csv if admin or instructor for course
       const results = await getCSV(req.params.id);
       if (results) {
+        // downloadCSV(results)
+        // .on('error', (err) => {
+        //   if (err.code === 'ENOENT') {
+        //     next();
+        //   } else {
+        //     next(err);
+        //   }
+        // })
+        // .on('file', (file) => {
+        //   res.status(200).type('text/csv');
+        // })
+        // .pipe(res);
+
         res.setHeader('Content-disposition', 'attachment; filename=enrollment.csv');
         res.set('Content-Type', 'text/csv');
         res.status(200).send(results);
       } else {
         next();
       }
-	} else {
-	  res.status(403).send({
-	    error: "Unauthorized."
-	  });
-	}
+    } else {
+      res.status(403).send({
+        error: "Unauthorized."
+      });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(404).send({
+      error: "Specified Course " + req.params.id + " not found"
+    });
+  }
+});
+
+router.get('/:id/assignments', async (req, res, next) => {
+  try{
+    const results = await getAssignmentsByCourseId(req.params.id);
+    if(results){
+      res.status(200).send(results);
+    } else {
+      next();
+    }  
   } catch (err) {
     console.error(err);
     res.status(404).send({
