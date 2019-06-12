@@ -227,13 +227,9 @@ router.post('/:id/submissions', requireAuthentication, upload.single('submission
 router.get('/:id/submissions', requireAuthentication, async (req, res, next) => {
   const assignment = await getAssignmentById(req.params.id);
   const course = await getCourseByID(assignment.courseId);
-  console.log("Assignment: " + JSON.stringify(assignment));
-  console.log("Course: " + JSON.stringify(course));
-  console.log("req.params.id: " + req.params.id);
-  console.log("req.role: " + req.role);
   if (req.role == 'admin' || (req.role == 'instructor' && req.user == course.instructorId)) {
     try {
-      const submission = await getPagedAssignmentSubmissions(req.params.id, parseInt(req.query.page));
+      const submission = await getPagedAssignmentSubmissions(req.params.id, (parseInt(req.query.page) || 1));
       if(!submission.length == 0){
         res.status(201).send({
           submissions: submission
