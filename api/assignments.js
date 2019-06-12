@@ -5,6 +5,7 @@
 const router = require('express').Router();
 const multer = require('multer');
 const crypto = require('crypto');
+const { requireAuthentication } = require('../lib/auth');
 const { validateAgainstSchema } = require('../lib/validation');
 const {
   AssignmentSchema,
@@ -20,6 +21,12 @@ const {
   getDownloadStreamByFilename,
   removeAllSubmissions
 } = require('../models/submission');
+const {
+  getCourseByID
+} = require('../models/course');
+const {
+  getUserById
+} = require('../models/users');
 
 const upload = multer({
   storage: multer.diskStorage({
@@ -36,22 +43,30 @@ const upload = multer({
 /*
  * Route to create a new assignment.
  */
-router.post('/', async (req, res) => {
-  if (validateAgainstSchema(req.body, AssignmentSchema)) {
-    try {
-      const id = await insertNewAssignment(req.body);
-      res.status(201).send({
-        id: id
-      });
-    } catch (err) {
-      console.error(err);
-      res.status(500).send({
-        error: "Error inserting assignment into DB.  Please try again later."
+router.post('/', requireAuthentication, async (req, res) => {
+  const course = await getCourseByID(req.body.courseId);
+  //console.log(JSON.stringify(req.body));
+  if (req.role == 'admin' || (req.role == 'instructor' && req.user == course.instructorId)) {
+    if (validateAgainstSchema(req.body, AssignmentSchema)) {
+      try {
+        const id = await insertNewAssignment(req.body);
+        res.status(201).send({
+          id: id
+        });
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({
+          error: "Error inserting assignment into DB.  Please try again later."
+        });
+      }
+    } else {
+      res.status(400).send({
+        error: "The request body was either not present or did not contain a valid Assignment object."
       });
     }
-  } else {
-    res.status(400).send({
-      error: "The request body was either not present or did not contain a valid Assignment object."
+  }else{
+    res.status(403).send({
+      error: "Unauthorized."
     });
   }
 });
@@ -81,26 +96,33 @@ router.get('/:id', async (req, res, next) => {
 /*
  * Route to update a specific assignment.
  */
-router.put('/:id', async (req, res, next) => {
-  if(validateAgainstSchema(req.body, AssignmentSchema)){
-    try {
-      const id = await updateAssignmentById(req.params.id, req.body);
-      if(id != null){
-        res.status(200).send({success: "Assignment: "+id+" updated"});
-      }else{
+router.put('/:id', requireAuthentication, async (req, res, next) => {
+  const course = await getCourseByID(req.body.courseId);
+  if (req.role == 'admin' || (req.role == 'instructor' && req.user == course.instructorId)) {
+    if(validateAgainstSchema(req.body, AssignmentSchema)){
+      try {
+        const id = await updateAssignmentById(req.params.id, req.body);
+        if(id != null){
+          res.status(200).send({success: "Assignment: "+id+" updated"});
+        }else{
+          res.status(404).send({
+            error: "Specified Assignment "+req.params.id+" not found."
+          });
+        }
+      } catch (err) {
+        console.error(" -- Error:", err);
         res.status(404).send({
           error: "Specified Assignment "+req.params.id+" not found."
         });
       }
-    } catch (err) {
-      console.error(" -- Error:", err);
-      res.status(404).send({
-        error: "Specified Assignment "+req.params.id+" not found."
+    }else{
+      res.status(403).send({
+        error: "The request body was either not present or did not contain any fields related to Assignment objects."
       });
     }
   }else{
     res.status(403).send({
-      error: "The request body was either not present or did not contain any fields related to Assignment objects."
+      error: "Unauthorized."
     });
   }
 });
@@ -108,21 +130,29 @@ router.put('/:id', async (req, res, next) => {
 /*
  * Route to delete a specific assignment.
  */
-router.delete('/:id', async (req, res, next) => {
-  try {
-    if(await getAssignmentById(req.params.id) != null){
-      const subs = await removeAllSubmissions(req.params.id);
-      const id = await deleteAssignmentById(req.params.id);
-      res.status(204).end();
-    }else{
+router.delete('/:id', requireAuthentication, async (req, res, next) => {
+  const assignment = await getAssignmentById(req.params.id);
+  const course = await getCourseByID(assignment.courseId);
+  if (req.role == 'admin' || (req.role == 'instructor' && req.user == course.instructorId)) {
+    try {
+      if(await getAssignmentById(req.params.id) != null){
+        const subs = await removeAllSubmissions(req.params.id);
+        const id = await deleteAssignmentById(req.params.id);
+        res.status(204).end();
+      }else{
+        res.status(404).send({
+          error: "Specified Assignment "+req.params.id+" not found"
+        });
+      }
+    } catch (err) {
+      console.error(" -- Error:", err);
       res.status(404).send({
         error: "Specified Assignment "+req.params.id+" not found"
       });
     }
-  } catch (err) {
-    console.error(" -- Error:", err);
-    res.status(404).send({
-      error: "Specified Assignment "+req.params.id+" not found"
+  }else{
+    res.status(403).send({
+      error: "Unauthorized."
     });
   }
 });
@@ -143,7 +173,19 @@ router.delete('/:id', async (req, res, next) => {
  */
 
 
-router.post('/:id/submissions', upload.single('submission'), async (req, res) => {
+router.post('/:id/submissions', requireAuthentication, upload.single('submission'), async (req, res) => {
+  const student = await getUserById(req.user, 0);
+  const assignment = await getAssignmentById(req.params.id);
+  var studentEnrolled = false;
+  if(student.enrollment){
+    for (i=0; i < student.enrollment.length; i++) {
+      if (student.enrollment[i] == assignment.courseId){
+        studentEnrolled = true;
+      }
+    }
+  }
+  console.log("StudentEnrolled: " + studentEnrolled);
+  if (req.role == 'student' && studentEnrolled == true) {
     try {
       const date = new Date();
       date.toISOString();
@@ -152,9 +194,7 @@ router.post('/:id/submissions', upload.single('submission'), async (req, res) =>
         filename: req.file.filename,
         contentType: req.file.mimetype,
         assignmentId: req.params.id,
-        //studentId needs to not be req.body.studentId, it needs to be the Id of the student that is logged in
-        //so req.user ??
-        studentId: req.body.studentId,
+        studentId: req.user,
         timestamp: date
       };
       const id = await insertNewSubmission(submission);
@@ -174,12 +214,24 @@ router.post('/:id/submissions', upload.single('submission'), async (req, res) =>
         error: "Specified Assignment "+req.params.id+" not found."
       });
     }
+  }else{
+    res.status(403).send({
+      error: "Unauthorized."
+    });
+  }
 });
 
 /*
  * Route to get paginated submissions for an assignment.
  */
-router.get('/:id/submissions', async (req, res, next) => {
+router.get('/:id/submissions', requireAuthentication, async (req, res, next) => {
+  const assignment = await getAssignmentById(req.params.id);
+  const course = await getCourseByID(assignment.courseId);
+  console.log("Assignment: " + JSON.stringify(assignment));
+  console.log("Course: " + JSON.stringify(course));
+  console.log("req.params.id: " + req.params.id);
+  console.log("req.role: " + req.role);
+  if (req.role == 'admin' || (req.role == 'instructor' && req.user == course.instructorId)) {
     try {
       const submission = await getPagedAssignmentSubmissions(req.params.id, parseInt(req.query.page));
       if(!submission.length == 0){
@@ -197,6 +249,11 @@ router.get('/:id/submissions', async (req, res, next) => {
         error: "Specified Assignment "+req.params.id+" not found."
       });
     }
+  }else{
+    res.status(403).send({
+      error: "Unauthorized."
+    });
+  }
 });
 
 /*
