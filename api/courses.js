@@ -10,8 +10,10 @@ const {
     deleteCourseByID,
     updateEnrollment,
     getEnrollment,
-    getCSV
+    getCSV,
+    getAssignmentsByCourseId
 } = require('../models/course');
+const { downloadCSV } = require('../models/csv');
 
 /*
  * Route to get paginated list of Courses.
@@ -99,7 +101,6 @@ router.put('/:id', async (req, res, next) => {
       });
     }
   } else {
-    console.error(err);
     res.status(400).send({
       error: "The request body was either not present or did not contain any fields related to Course objects."
     });
@@ -169,8 +170,38 @@ router.get('/:id/router', async (req, res, next) => {
   try {
     const results = await getCSV(req.params.id);
     if (results) {
+      // downloadCSV(results)
+      // .on('error', (err) => {
+      //   if (err.code === 'ENOENT') {
+      //     next();
+      //   } else {
+      //     next(err);
+      //   }
+      // })
+      // .on('file', (file) => {
+      //   res.status(200).type('text/csv');
+      // })
+      // .pipe(res);
+
       res.setHeader('Content-disposition', 'attachment; filename=enrollment.csv');
       res.set('Content-Type', 'text/csv');
+      res.status(200).send(results);
+
+    } else {
+      next();
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(404).send({
+      error: "Specified Course " + req.params.id + " not found"
+    });
+  }
+});
+
+router.get('/:id/assignments', async (req, res, next) => {
+  try{
+    const results = await getAssignmentsByCourseId(req.params.id);
+    if(results){
       res.status(200).send(results);
     } else {
       next();

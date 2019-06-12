@@ -29,7 +29,6 @@ const upload = multer({
       const basename = crypto.pseudoRandomBytes(16).toString('hex');
       const extension = file.originalname.substr(file.originalname.lastIndexOf('.') + 1);
       callback(null, `${basename}.${extension}`);
-
     }
   })
 });
