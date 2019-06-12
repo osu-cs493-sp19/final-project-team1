@@ -25,7 +25,7 @@ const {
   getCourseByID
 } = require('../models/course');
 const {
-  getUserByID
+  getUserById
 } = require('../models/users');
 
 const upload = multer({
@@ -174,11 +174,17 @@ router.delete('/:id', requireAuthentication, async (req, res, next) => {
 
 
 router.post('/:id/submissions', requireAuthentication, upload.single('submission'), async (req, res) => {
-  const student = await getUserByID(req.user);
+  const student = await getUserById(req.user, 0);
+  const assignment = await getAssignmentById(req.params.id);
   var studentEnrolled = false;
-  if(student.enrollments){
-    studentEnrolled = student.enrollments.includes(req.params.id);
+  if(student.enrollment){
+    for (i=0; i < student.enrollment.length; i++) {
+      if (student.enrollment[i] == assignment.courseId){
+        studentEnrolled = true;
+      }
+    }
   }
+  console.log("StudentEnrolled: " + studentEnrolled);
   if (req.role == 'student' && studentEnrolled == true) {
     try {
       const date = new Date();
@@ -187,7 +193,7 @@ router.post('/:id/submissions', requireAuthentication, upload.single('submission
         path: req.file.path,
         filename: req.file.filename,
         contentType: req.file.mimetype,
-        assignmentId: user.id,
+        assignmentId: req.params.id,
         studentId: req.user,
         timestamp: date
       };
@@ -218,9 +224,13 @@ router.post('/:id/submissions', requireAuthentication, upload.single('submission
 /*
  * Route to get paginated submissions for an assignment.
  */
-router.get('/:id/submissions', async (req, res, next) => {
-  const assignment = getAssignmentById(req.params.id);
-  const course = getCourseByID(assignment.courseId);
+router.get('/:id/submissions', requireAuthentication, async (req, res, next) => {
+  const assignment = await getAssignmentById(req.params.id);
+  const course = await getCourseByID(assignment.courseId);
+  console.log("Assignment: " + JSON.stringify(assignment));
+  console.log("Course: " + JSON.stringify(course));
+  console.log("req.params.id: " + req.params.id);
+  console.log("req.role: " + req.role);
   if (req.role == 'admin' || (req.role == 'instructor' && req.user == course.instructorId)) {
     try {
       const submission = await getPagedAssignmentSubmissions(req.params.id, parseInt(req.query.page));
