@@ -76,14 +76,15 @@ exports.getUserById = getUserById;
 async function getCoursesByInstructorId(id){
 	const db = getDBReference();
 	const collection = db.collection('courses');
-	
+	console.log("In getCoursesByInstructorId ---");
 	if(!ObjectId.isValid(id)){
 		return null;
 	}else{
+		console.log(id);
 		const results = await collection
-			.find({instructorId: new ObjectId(id)})
+			.find({ "instructorId": id })
 			.toArray();
-
+		console.log(results);
 		return results;
 	}
 }

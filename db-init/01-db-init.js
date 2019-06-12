@@ -33,5 +33,12 @@ db.courses.insertMany([
     "title": "Some Other Class",
     "term": "sp19",
     "instructorId": "5"
+	},
+	{
+    "subject": "MTH",
+    "number": 202,
+    "title": "Super Advanced Hard Math Stuff",
+    "term": "sp19",
+    "instructorId": "4"
   }
 ])

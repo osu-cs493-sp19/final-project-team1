@@ -93,7 +93,7 @@ router.get('/:id', requireAuthentication, async (req, res, next) => {
 
 			if (user) {
 				if(user.role == "instructor"){
-					user.courses = getCoursesByInstructorId(user._id);
+					user.courses = await getCoursesByInstructorId(req.params.id);
 				}else{
 					user.courses = [];
 				}
