@@ -34,6 +34,10 @@ async function getPagedAssignmentSubmissions(id, page) {
         return null;
     } else {
         const results = await getAllAssignmentSubmissions(id);
+        console.log(results);
+        if(results.length < (page-1)*10){
+            page = 1;
+        }
         var returns = results.slice((page-1)*10, (page*10));
         var submissionReturns = []
         returns.forEach(function(element) {

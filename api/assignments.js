@@ -141,6 +141,8 @@ router.delete('/:id', async (req, res, next) => {
 /*
  * Route to create a new submission.
  */
+
+
 router.post('/:id/submissions', upload.single('submission'), async (req, res) => {
     try {
       const date = new Date();
@@ -150,6 +152,8 @@ router.post('/:id/submissions', upload.single('submission'), async (req, res) =>
         filename: req.file.filename,
         contentType: req.file.mimetype,
         assignmentId: req.params.id,
+        //studentId needs to not be req.body.studentId, it needs to be the Id of the student that is logged in
+        //so req.user ??
         studentId: req.body.studentId,
         timestamp: date
       };

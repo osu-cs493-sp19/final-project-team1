@@ -2,6 +2,7 @@ const router = require('express').Router();
 const {validateAgainstSchema} = require('../lib/validation');
 const {generateAuthToken, requireAuthentication} = require('../lib/auth');
 const {UserSchema, insertNewUser, getUserById, getUserByEmail, validateUser, getAllUsers, getCoursesByInstructorId} = require('../models/users');
+const {getCourseByID} = require('../models/course');
 
 /*
  * Route to create new user account
@@ -89,19 +90,24 @@ router.get('/', async (req, res, next) => {
 router.get('/:id', requireAuthentication, async (req, res, next) => {
 	if (req.role == "admin" || req.user == req.params.id) {
 		try {
-			const user = await getUserById(req.user, 0);
+			const user = await getUserById(req.params.id, 0);
 
 			if (user) {
-				if(user.role == "instructor"){
-					user.courses = await getCoursesByInstructorId(req.params.id);
-				}else{
-					user.courses = [];
+				user.courses = [];
+				
+				if (user.role == "instructor") {
+					user.courses = await getCoursesByInstructorId(user._id.toString());
+				} else if (user.role == "student" && user.enrollment) {                         // user is student and enrolled in one or more courses
+					for (var i = 0; i < user.enrollment.length; i++) {
+						user.courses.push(await getCourseByID(user.enrollment[i]));
+					}
 				}
 				res.status(200).send(user);
 			} else {
 				next();
 			}
 		} catch (err) {
+			console.log(err);
 			res.status(500).send({
 				error: "Unable to fetch user.  Please try again later."
 			});

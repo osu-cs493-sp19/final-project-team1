@@ -82,7 +82,7 @@ async function getCoursesByInstructorId(id){
 	}else{
 		console.log(id);
 		const results = await collection
-			.find({ "instructorId": id })
+			.find({instructorId: id})
 			.toArray();
 		console.log(results);
 		return results;
